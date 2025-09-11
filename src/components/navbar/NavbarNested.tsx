@@ -9,10 +9,10 @@ import { NavLink, useLocation } from "react-router-dom";
 import classes from "./DoubleNavbar.module.css";
 
 const mainLinksData = [
-    { icon: IconGauge, label: "Dashboard", path: "/" },
-  { icon: IconHome2, label: "Home", path: "/home" },
+    { icon: IconGauge, label: "Dashboard", path: "/dashboard" },
+  { icon: IconHome2, label: "Admin-Invoice", path: "/admin-invoice" },
 
-  { icon: IconDeviceDesktopAnalytics, label: "About", path: "/about" },
+  { icon: IconDeviceDesktopAnalytics, label: "User-Invoice", path: "/user-invoice" },
 ];
 
 export default function NavbarNested() {

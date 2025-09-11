@@ -1,5 +1,6 @@
 import { BrowserRouter, useRoutes } from "react-router-dom";
 import routes from "./router";
+import TitleUpdater from "./components/TitleUpdater";
 
 function RoutesWrapper() {
   
@@ -9,7 +10,9 @@ function RoutesWrapper() {
 
 export default function App() {
   return (
+    
     <BrowserRouter>
+      <TitleUpdater /> 
       <RoutesWrapper />
     </BrowserRouter>
   );
