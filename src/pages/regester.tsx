@@ -15,55 +15,51 @@ import {
 } from "@mantine/core";
 import { IconBrandGoogle, IconBrandGithub } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
-import axios, { AxiosError } from "axios";
 import { notifySuccess, notifyError } from "../lib/utils/notify";
+import axios, { AxiosError } from "axios";
 
-// ✅ Strongly typed form values
-interface LoginFormValues {
-  email: string;
-  password: string;
-}
-
-export default function Auth() {
+export default function Register() {
   const navigate = useNavigate();
 
-  const form = useForm<LoginFormValues>({
+  const form = useForm({
     initialValues: {
+      name: "",
       email: "",
       password: "",
+      confirmPassword: "",
     },
     validate: {
+      name: (value) =>
+        value.trim().length < 2 ? "Name should have at least 2 characters" : null,
       email: (value) =>
         /^\S+@\S+$/.test(value) ? null : "Invalid email",
       password: (value) =>
-        value.length < 6
-          ? "Password should include at least 6 characters"
-          : null,
+        value.length < 6 ? "Password must be at least 6 characters" : null,
+      confirmPassword: (value, values) =>
+        value !== values.password ? "Passwords do not match" : null,
     },
   });
 
-  const handleSubmit = async (values: LoginFormValues) => {
+  const handleSubmit = async (values: typeof form.values) => {
     try {
-      // ✅ Call backend login
-      const res = await axios.post("/api/v1/auth/login", {
+      const response = await axios.post("/api/v1/auth/register", {
+        name: values.name,
         email: values.email,
         password: values.password,
       });
 
-      // ✅ Save token & user data in sessionStorage
-      sessionStorage.setItem("token", res.data.token);
-      sessionStorage.setItem("user", JSON.stringify(res.data.user));
-      
+      // ✅ Save token and user data
+      sessionStorage.setItem("token", response.data.token);
+      sessionStorage.setItem("user", JSON.stringify(response.data.user));
 
-      notifySuccess("Login successful!");
-      console.log("Logged in:", res.data);
-
-      // ✅ Redirect to dashboard
+      notifySuccess("Registration successful!");
       navigate("/dashboard");
     } catch (err) {
       const error = err as AxiosError<{ message?: string }>;
-      console.error("Login error:", error);
-      notifyError(error.response?.data?.message || "Login failed");
+      console.error("Register error:", error);
+
+      const msg = error.response?.data?.message || "Registration failed";
+      notifyError(msg);
     }
   };
 
@@ -89,46 +85,40 @@ export default function Auth() {
             }}
           />
           <Image
-            src="/12.jpg"
-            alt="Login background"
+            src="/12.jpg" 
+            alt="Register background"
             style={{
               width: "100%",
               height: "100%",
               objectFit: "cover",
             }}
           />
-          <Stack
-            pos="absolute"
-            bottom={60}
-            left={60}
-            c="white"
-            style={{ zIndex: 2 }}
-            gap="xs"
-          >
-            <Title order={1} size={42}>
-              Welcome Back!
-            </Title>
+          <Stack pos="absolute" bottom={60} left={60} c="white" style={{ zIndex: 2 }} gap="xs">
+            <Title order={1} size={42}>Join Us Today!</Title>
             <Text size="lg" maw={450} style={{ lineHeight: 1.6 }}>
-              Login to access your workspace and manage your tasks efficiently.
+              Create your account and start managing your tasks with ease.
             </Text>
           </Stack>
         </Box>
 
-        {/* Right side - Login Form */}
+        {/* Right side - Register Form */}
         <Box w="25%" bg="white" p={40}>
           <Center h="100%">
             <Stack w="100%" gap="lg">
               <Stack gap={0} mb={10}>
-                <Title order={2} size={28}>
-                  Sign In
-                </Title>
-                <Text c="dimmed" size="sm">
-                  Please enter your credentials to continue
-                </Text>
+                <Title order={2} size={28}>Create Account</Title>
+                <Text c="dimmed" size="sm">Fill in the details to register</Text>
               </Stack>
 
               <form onSubmit={form.onSubmit(handleSubmit)}>
                 <Stack gap="md">
+                  <TextInput
+                    label="Full Name"
+                    placeholder="John Doe"
+                    size="md"
+                    {...form.getInputProps("name")}
+                  />
+
                   <TextInput
                     label="Email address"
                     placeholder="hello@example.com"
@@ -143,43 +133,43 @@ export default function Auth() {
                     {...form.getInputProps("password")}
                   />
 
+                  <PasswordInput
+                    label="Confirm Password"
+                    placeholder="Re-enter password"
+                    size="md"
+                    {...form.getInputProps("confirmPassword")}
+                  />
+
                   <Button
                     type="submit"
                     size="md"
                     style={{
-                      background:
-                        "linear-gradient(45deg, #3b82f6 0%, #2563eb 100%)",
+                      background: "linear-gradient(45deg, #22c55e 0%, #16a34a 100%)",
                       transition: "transform 0.2s",
                     }}
                   >
-                    Sign in
+                    Sign up
                   </Button>
                 </Stack>
               </form>
 
-              {/* Register button */}
+              {/* Back to login */}
               <Button
                 variant="outline"
                 color="blue"
                 size="md"
-                onClick={() => navigate("/register")}
+                onClick={() => navigate("/")}
               >
-                Create an account
+                Already have an account? Sign in
               </Button>
 
               <Divider label="or continue with" labelPosition="center" />
 
               <Group grow>
-                <Button
-                  variant="light"
-                  leftSection={<IconBrandGoogle size={20} />}
-                >
+                <Button variant="light" leftSection={<IconBrandGoogle size={20} />}>
                   Google
                 </Button>
-                <Button
-                  variant="light"
-                  leftSection={<IconBrandGithub size={20} />}
-                >
+                <Button variant="light" leftSection={<IconBrandGithub size={20} />}>
                   GitHub
                 </Button>
               </Group>

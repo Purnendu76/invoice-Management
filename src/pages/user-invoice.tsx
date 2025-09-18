@@ -1,19 +1,40 @@
 import { useEffect, useState } from "react";
-import { Table, TextInput, Group, Text, Badge, Stack, Loader, Title } from "@mantine/core";
-import { IconSearch } from "@tabler/icons-react";
+import {
+  Table,
+  TextInput,
+  Group,
+  Button,
+  Modal,
+  Text,
+  Badge,
+  Stack,
+  ActionIcon,
+  Loader,
+  Title,
+} from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
+import { IconSearch, IconPlus, IconEdit, IconTrash } from "@tabler/icons-react";
 import axios from "axios";
+import InvoiceForm from "../components/InvoiceForm";
 import type { Invoice } from "@/interface/Invoice";
+import { modals } from "@mantine/modals";
+import { notifySuccess, notifyError } from "../lib/utils/notify";
 
 export default function User_invoice() {
   const [search, setSearch] = useState("");
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [opened, { open, close }] = useDisclosure(false);
 
-  // ✅ Fetch invoices
+  // ✅ Fetch only invoices for logged-in user
   const fetchInvoices = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("/api/v1/invoices");
+      const token = sessionStorage.getItem("token");
+      const res = await axios.get("/api/v1/user-invoices", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       const normalized = res.data.map((inv: Invoice) => ({
         ...inv,
@@ -25,6 +46,7 @@ export default function User_invoice() {
       setInvoices(normalized);
     } catch (error) {
       console.error("Error fetching invoices:", error);
+      notifyError("Failed to fetch invoices");
     } finally {
       setLoading(false);
     }
@@ -34,7 +56,42 @@ export default function User_invoice() {
     fetchInvoices();
   }, []);
 
-  // ✅ Filter invoices by search
+  // ✅ Delete invoice
+  const handleDelete = (id: string) => {
+    modals.openConfirmModal({
+      title: "Delete invoice",
+      centered: true,
+      children: <Text size="sm">Are you sure you want to delete this invoice?</Text>,
+      labels: { confirm: "Delete", cancel: "Cancel" },
+      confirmProps: { color: "red" },
+      onConfirm: async () => {
+        try {
+          const token = sessionStorage.getItem("token");
+          await axios.delete(`/api/v1/user-invoices/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setInvoices((prev) => prev.filter((inv) => inv.id !== id));
+          notifySuccess("Invoice deleted successfully");
+        } catch (error) {
+          console.error("Error deleting invoice:", error);
+          notifyError("Failed to delete invoice");
+        }
+      },
+    });
+  };
+
+  // ✅ Edit invoice
+  const handleEdit = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    open();
+  };
+
+  // ✅ Add new invoice
+  const handleNew = () => {
+    setSelectedInvoice(null);
+    open();
+  };
+
   const filteredInvoices = invoices.filter(
     (inv) =>
       inv.invoiceNumber.toLowerCase().includes(search.toLowerCase()) ||
@@ -44,13 +101,14 @@ export default function User_invoice() {
   return (
     <Stack>
       <Stack gap="xs" mb="md">
-              <Title order={2}>User Invoice</Title>
-              <Text c="dimmed" size="sm">
-                View and track your invoices from this dashboard.
-              </Text>
-            </Stack>
-      {/* Search Bar */}
-      <Group justify="flex-start">
+        <Title order={2}>My Invoices</Title>
+        <Text c="dimmed" size="sm">
+          View and manage only your invoices here.
+        </Text>
+      </Stack>
+
+      {/* Search + Add */}
+      <Group justify="space-between">
         <TextInput
           placeholder="Search invoices..."
           leftSection={<IconSearch size={16} />}
@@ -58,6 +116,9 @@ export default function User_invoice() {
           onChange={(e) => setSearch(e.currentTarget.value)}
           style={{ width: "300px" }}
         />
+        <Button leftSection={<IconPlus size={16} />} onClick={handleNew}>
+          New Invoice
+        </Button>
       </Group>
 
       {/* Table */}
@@ -70,10 +131,10 @@ export default function User_invoice() {
               <Table.Th>Invoice</Table.Th>
               <Table.Th>Invoice Date</Table.Th>
               <Table.Th>Total Amount (₹)</Table.Th>
-              <Table.Th>Net Payable (₹)</Table.Th>
               <Table.Th>Amount Paid (₹)</Table.Th>
               <Table.Th>Balance (₹)</Table.Th>
               <Table.Th>Status</Table.Th>
+              <Table.Th>Action</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -87,7 +148,6 @@ export default function User_invoice() {
                       : "-"}
                   </Table.Td>
                   <Table.Td>₹{invoice.totalAmount}</Table.Td>
-                  <Table.Td>₹{invoice.netPayable}</Table.Td>
                   <Table.Td>₹{invoice.amountPaidByClient}</Table.Td>
                   <Table.Td>₹{invoice.balance}</Table.Td>
                   <Table.Td>
@@ -103,6 +163,24 @@ export default function User_invoice() {
                       {invoice.status}
                     </Badge>
                   </Table.Td>
+                  <Table.Td>
+                    <Group gap="xs">
+                      <ActionIcon
+                        color="blue"
+                        variant="light"
+                        onClick={() => handleEdit(invoice)}
+                      >
+                        <IconEdit size={16} />
+                      </ActionIcon>
+                      <ActionIcon
+                        color="red"
+                        variant="light"
+                        onClick={() => handleDelete(invoice.id)}
+                      >
+                        <IconTrash size={16} />
+                      </ActionIcon>
+                    </Group>
+                  </Table.Td>
                 </Table.Tr>
               ))
             ) : (
@@ -117,6 +195,24 @@ export default function User_invoice() {
           </Table.Tbody>
         </Table>
       )}
+
+      {/* Modal for new/edit invoice */}
+      <Modal
+        size="55rem"
+        opened={opened}
+        onClose={close}
+        title={selectedInvoice ? "Edit Invoice" : "Add New Invoice"}
+        centered
+      >
+        <InvoiceForm
+          onSubmit={async () => {
+            await fetchInvoices();
+            close();
+          }}
+          onClose={close}
+          initialValues={selectedInvoice ?? undefined}
+        />
+      </Modal>
     </Stack>
   );
 }

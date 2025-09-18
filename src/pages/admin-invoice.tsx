@@ -37,7 +37,11 @@ export default function Admin_invoice() {
   const fetchInvoices = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("/api/v1/invoices");
+         // ✅ Get token from sessionStorage
+    const token = sessionStorage.getItem("token");
+    const res = await axios.get("/api/v1/invoices", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
       // Normalize date fields so they are always Date | null
       const normalized = res.data.map((inv: Invoice) => ({
@@ -73,7 +77,10 @@ export default function Admin_invoice() {
     confirmProps: { color: "red" },
     onConfirm: async () => {
       try {
-        await axios.delete(`/api/v1/invoices/${id}`);
+        const token = sessionStorage.getItem("token");
+        await axios.delete(`/api/v1/invoices/${id}`,{
+          headers: { Authorization: `Bearer ${token}` },
+        })
         setInvoices((prev) => prev.filter((inv) => inv.id !== id));
         setLoading(false);
         notifySuccess("Invoice deleted successfully");

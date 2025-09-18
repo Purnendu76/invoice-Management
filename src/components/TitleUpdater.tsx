@@ -7,6 +7,8 @@ export default function TitleUpdater() {
   useEffect(() => {
     // Map routes to page titles
     const routeTitles: { [key: string]: string } = {
+      "/":"signIn",
+      "/register": "Register",
       "/dashboard": "Dashboard",
       "/admin-invoice": "Admin ",
       "/user-invoice": "User ",

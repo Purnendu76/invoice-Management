@@ -222,11 +222,17 @@ export default function InvoiceForm({
       let res;
       if (initialValues?.id) {
         // 🔹 Update existing invoice
-        res = await axios.put(`/api/v1/invoices/${initialValues.id}`, payload);
+         const token = sessionStorage.getItem("token");
+        res = await axios.put(`/api/v1/invoices/${initialValues.id}`, payload,{
+          headers: { Authorization: `Bearer ${token}` },
+        });
         notifySuccess("Invoice updated successfully ✅");
       } else {
         // 🔹 Create new invoice
-        res = await axios.post("/api/v1/invoices", payload);
+          const token = sessionStorage.getItem("token");
+        res = await axios.post("/api/v1/invoices", payload,{
+          headers: { Authorization: `Bearer ${token}` },
+        });
         notifySuccess("Invoice submitted successfully ✅");
       }
 
