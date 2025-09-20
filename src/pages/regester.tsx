@@ -49,8 +49,8 @@ export default function Register() {
       });
 
       // ✅ Save token and user data
-      sessionStorage.setItem("token", response.data.token);
-      sessionStorage.setItem("user", JSON.stringify(response.data.user));
+      document.cookie = `token=${response.data.token}; path=/;`;
+      document.cookie = `user=${encodeURIComponent(JSON.stringify(response.data.user))}; path=/;`;
 
       notifySuccess("Registration successful!");
       navigate("/dashboard");

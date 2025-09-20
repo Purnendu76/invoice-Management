@@ -19,10 +19,13 @@ import InvoiceForm from "../components/InvoiceForm";
 import type { Invoice } from "@/interface/Invoice";
 import { modals } from "@mantine/modals";
 import {
+
   notifySuccess,
   notifyError,
   
 } from "../lib/utils/notify";
+// import Cookies from "js-cookie";
+import Cookies from "js-cookie";
 
 
 export default function Admin_invoice() {
@@ -38,7 +41,8 @@ export default function Admin_invoice() {
     try {
       setLoading(true);
          // ✅ Get token from sessionStorage
-    const token = sessionStorage.getItem("token");
+    // Get token from cookies instead of sessionStorage
+    const token = Cookies.get("token");
     const res = await axios.get("/api/v1/invoices", {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -77,10 +81,10 @@ export default function Admin_invoice() {
     confirmProps: { color: "red" },
     onConfirm: async () => {
       try {
-        const token = sessionStorage.getItem("token");
-        await axios.delete(`/api/v1/invoices/${id}`,{
+        const token = Cookies.get("token");
+        await axios.delete(`/api/v1/invoices/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
-        })
+        });
         setInvoices((prev) => prev.filter((inv) => inv.id !== id));
         setLoading(false);
         notifySuccess("Invoice deleted successfully");

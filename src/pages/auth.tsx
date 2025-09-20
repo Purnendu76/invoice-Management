@@ -51,9 +51,8 @@ export default function Auth() {
       });
 
       // ✅ Save token & user data in sessionStorage
-      sessionStorage.setItem("token", res.data.token);
-      sessionStorage.setItem("user", JSON.stringify(res.data.user));
-      
+      document.cookie = `token=${res.data.token}; path=/;`;
+      document.cookie = `user=${encodeURIComponent(JSON.stringify(res.data.user))}; path=/;`;
 
       notifySuccess("Login successful!");
       console.log("Logged in:", res.data);

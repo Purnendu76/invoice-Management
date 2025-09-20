@@ -31,7 +31,11 @@ export default function User_invoice() {
   const fetchInvoices = async () => {
     try {
       setLoading(true);
-      const token = sessionStorage.getItem("token");
+      // Get token from cookies instead of sessionStorage
+      const token = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("token="))
+        ?.split("=")[1];
       const res = await axios.get("/api/v1/user-invoices", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -66,7 +70,11 @@ export default function User_invoice() {
       confirmProps: { color: "red" },
       onConfirm: async () => {
         try {
-          const token = sessionStorage.getItem("token");
+          // Get token from cookies instead of sessionStorage
+          const token = document.cookie
+            .split("; ")
+            .find((row) => row.startsWith("token="))
+            ?.split("=")[1];
           await axios.delete(`/api/v1/user-invoices/${id}`, {
             headers: { Authorization: `Bearer ${token}` },
           });

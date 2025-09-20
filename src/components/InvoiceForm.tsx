@@ -20,6 +20,7 @@ import {
 import {usePrefillInvoiceForm} from "../hooks/usePrefillInvoiceForm";
 
 import type { Invoice } from "@/interface/Invoice";
+import Cookies from "js-cookie";
 
 type InvoiceFormProps = {
   onSubmit?: (data: { client: string; amount: number }) => void;
@@ -153,109 +154,107 @@ export default function InvoiceForm({
   }, [basicAmount, gstAmount, gstPercentage]);
 
   // 🔹 Submit handler
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+ // 🔹 Submit handler
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (
-      !project ||
-      !mode ||
-      !state ||
-      !billCategory ||
-      !invoiceNumber ||
-      !invoiceDate ||
-      !submissionDate ||
-      !basicAmount ||
-      !gstPercentage ||
-      !status
-    ) {
-      notifyWarning("Please fill all required fields ❌");
-      return;
-    }
+  if (
+    !project ||
+    !mode ||
+    !state ||
+    !billCategory ||
+    !invoiceNumber ||
+    !invoiceDate ||
+    !submissionDate ||
+    !basicAmount ||
+    !gstPercentage ||
+    !status
+  ) {
+    notifyWarning("Please fill all required fields ❌");
+    return;
+  }
 
-    if (paymentDate && submissionDate && paymentDate < submissionDate) {
-      notifyError("Payment date must be later than Submission Date ❌");
-      return;
-    }
+  if (paymentDate && submissionDate && paymentDate < submissionDate) {
+    notifyError("Payment date must be later than Submission Date ❌");
+    return;
+  }
 
-    const payload = {
-      project,
-      modeOfProject: mode,
-      state,
-      mybillCategory: billCategory,
-      milestone,
-      invoiceNumber,
-      invoiceDate: invoiceDate
-        ? invoiceDate.toISOString().split("T")[0]
-        : null,
-      submissionDate: submissionDate
-        ? submissionDate.toISOString().split("T")[0]
-        : null,
-      invoiceBasicAmount: basicAmount || 0,
-      gstPercentage,
-      invoiceGstAmount: gstAmount,
-      totalAmount: totalAmount || 0,
-      passedAmountByClient: passedAmount || 0,
-      retention: retention || 0,
-      gstWithheld: gstWithheld || 0,
-      tds: tds || 0,
-      gstTds: gstTds || 0,
-      bocw: bocw || 0,
-      lowDepthDeduction: lowDepth || 0,
-      ld: ld || 0,
-      slaPenalty: slaPenalty || 0,
-      penalty: penalty || 0,
-      otherDeduction: otherDeduction || 0,
-      totalDeduction,
-      netPayable,
-      status,
-      amountPaidByClient: amountPaid || 0,
-      paymentDate: paymentDate
-        ? paymentDate.toISOString().split("T")[0]
-        : null,
-      balance,
-      remarks,
-    };
-
-    try {
-      setLoading(true);
-
-      let res;
-      if (initialValues?.id) {
-        // 🔹 Update existing invoice
-         const token = sessionStorage.getItem("token");
-        res = await axios.put(`/api/v1/invoices/${initialValues.id}`, payload,{
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        notifySuccess("Invoice updated successfully ✅");
-      } else {
-        // 🔹 Create new invoice
-          const token = sessionStorage.getItem("token");
-        res = await axios.post("/api/v1/invoices", payload,{
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        notifySuccess("Invoice submitted successfully ✅");
-      }
-
-      if (onSubmit) {
-        onSubmit({ client: billCategory || "Unknown", amount: netPayable });
-      }
-      if (onClose) onClose();
-
-      console.log(res.data);
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        console.error(
-          "Error submitting invoice:",
-          error.response?.data || error.message
-        );
-      } else {
-        console.error("Error submitting invoice:", error);
-      }
-      notifyError("Failed to submit invoice ❌");
-    } finally {
-      setLoading(false);
-    }
+  const payload = {
+    project,
+    modeOfProject: mode,
+    state,
+    mybillCategory: billCategory,
+    milestone,
+    invoiceNumber,
+    invoiceDate: invoiceDate ? invoiceDate.toISOString().split("T")[0] : null,
+    submissionDate: submissionDate ? submissionDate.toISOString().split("T")[0] : null,
+    invoiceBasicAmount: basicAmount || 0,
+    gstPercentage,
+    invoiceGstAmount: gstAmount,
+    totalAmount: totalAmount || 0,
+    passedAmountByClient: passedAmount || 0,
+    retention: retention || 0,
+    gstWithheld: gstWithheld || 0,
+    tds: tds || 0,
+    gstTds: gstTds || 0,
+    bocw: bocw || 0,
+    lowDepthDeduction: lowDepth || 0,
+    ld: ld || 0,
+    slaPenalty: slaPenalty || 0,
+    penalty: penalty || 0,
+    otherDeduction: otherDeduction || 0,
+    totalDeduction,
+    netPayable,
+    status,
+    amountPaidByClient: amountPaid || 0,
+    paymentDate: paymentDate ? paymentDate.toISOString().split("T")[0] : null,
+    balance,
+    remarks,
   };
+
+  try {
+    setLoading(true);
+    const token = Cookies.get("token");
+
+    let res;
+    if (initialValues?.id) {
+      // 🔹 Update existing invoice
+      res = await axios.put(
+        `/api/v1/user-invoices/${initialValues.id}`,
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      notifySuccess("Invoice updated successfully ✅");
+    } else {
+      // 🔹 Create new invoice
+      res = await axios.post(
+        "/api/v1/user-invoices",
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      notifySuccess("Invoice submitted successfully ✅");
+    }
+
+    if (onSubmit) {
+      onSubmit({ client: billCategory || "Unknown", amount: netPayable });
+    }
+    if (onClose) onClose();
+
+    console.log(res.data);
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      console.error(
+        "Error submitting invoice:",
+        error.response?.data || error.message
+      );
+    } else {
+      console.error("Error submitting invoice:", error);
+    }
+    notifyError("Failed to submit invoice ❌");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <Box pos="relative">
