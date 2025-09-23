@@ -6,6 +6,7 @@ import User_invoice from "../pages/user-invoice";
 import Register from "../pages/regester";
 import Auth from "../pages/auth";
 import PrivateRoute from "../components/PrivateRoute";
+import Users from "../pages/users";
 
 const routes: RouteObject[] = [
   { path: "/", element: <Auth /> },
@@ -38,6 +39,14 @@ const routes: RouteObject[] = [
           </PrivateRoute>
         ),
       },
+      {
+        path: "/users",
+        element: (
+          <PrivateRoute allowedRoles={["Admin"]}>
+            <Users />
+          </PrivateRoute>
+        ),
+      }
     ],
   },
 ];

@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 export type Invoice = {
   netPayable: ReactNode;
   totalDeductions: ReactNode;
@@ -21,7 +23,8 @@ export type Invoice = {
   milestone: string;
   state: null;
   modeOfProject: null;
-  project: null;
+  // project can be a single string, an array of project strings, or null
+  project: string | string[] | null;
   id: string;
   invoiceNumber: string;
   invoiceDate: Date|null; // API gives string, we’ll convert

@@ -10,8 +10,9 @@ export default function TitleUpdater() {
       "/":"signIn",
       "/register": "Register",
       "/dashboard": "Dashboard",
-      "/admin-invoice": "Admin ",
-      "/user-invoice": "User ",
+      "/admin-invoice": "Admin-invoice ",
+      "/user-invoice": "User-invoice ",
+      "/users": "Users",
     };
 
     const path = location.pathname;

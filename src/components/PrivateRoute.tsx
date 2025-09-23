@@ -1,20 +1,22 @@
 import type { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
-import Cookies from "js-cookie";
+import { getUserRole } from "../lib/utils/getUserRole";
 
-// Define props type
 type PrivateRouteProps = {
   children: ReactNode;
-  allowedRoles?: Array<"Admin" | "user">; // Adjust roles as needed
+  allowedRoles?: Array<"Admin" | "user">;
 };
 
 export default function PrivateRoute({ children, allowedRoles }: PrivateRouteProps) {
-  const token = Cookies.get("token");
-  const role = token ? JSON.parse(atob(token.split(".")[1]))?.role : null;
+  const role = getUserRole();
 
-  if (!token || (allowedRoles && !allowedRoles.includes(role))) {
+  // ✅ If no token/role, go to login *immediately*
+  if (!role) return <Navigate to="/" replace />;
+
+  // ✅ If role not allowed, block
+  if (allowedRoles && !allowedRoles.includes(role)) {
     return <Navigate to="/" replace />;
   }
 
-  return <>{children}</>; // wrap in fragment to satisfy JSX
+  return <>{children}</>;
 }

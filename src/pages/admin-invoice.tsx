@@ -11,6 +11,7 @@ import {
   ActionIcon,
   Loader,
   Title,
+  Select 
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { IconSearch, IconPlus, IconEdit, IconTrash } from "@tabler/icons-react";
@@ -33,6 +34,7 @@ export default function Admin_invoice() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [projectFilter, setProjectFilter] = useState<string | null>(null);
 
   const [opened, { open, close }] = useDisclosure(false);
 
@@ -108,12 +110,33 @@ export default function Admin_invoice() {
     open();
   };
 
-  // ✅ Filter invoices by search
-  const filteredInvoices = invoices.filter(
-    (inv) =>
+  // Build unique project options for the Select control
+  const projectOptions = Array.from(
+    new Set(
+      invoices.flatMap((inv) =>
+        Array.isArray(inv.project) ? inv.project : inv.project ? [inv.project] : []
+      )
+    )
+  ).map((p) => ({ value: p as string, label: p as string }));
+
+  // ✅ Filter invoices by search and optional projectFilter
+  const filteredInvoices = invoices.filter((inv) => {
+    const matchesSearch =
       inv.invoiceNumber.toLowerCase().includes(search.toLowerCase()) ||
-      inv.status.toLowerCase().includes(search.toLowerCase())
-  );
+      inv.status.toLowerCase().includes(search.toLowerCase());
+
+    if (!projectFilter) return matchesSearch;
+
+    const projects = Array.isArray(inv.project) ? inv.project : inv.project ? [inv.project] : [];
+    const matchesProject = projects.some(
+      (p) => p.toLowerCase() === projectFilter.toLowerCase()
+    );
+
+    return matchesSearch && matchesProject;
+  });
+
+  // Ensure Select uses the built options
+  const selectData = projectOptions;
 
   return (
 
@@ -125,15 +148,28 @@ export default function Admin_invoice() {
           Manage, track, and update invoices from this dashboard.
         </Text>
       </Stack>
-      {/* Search + Add */}
+      {/* Search + Project Filter + Add */}
       <Group justify="space-between">
-        <TextInput
-          placeholder="Search invoices..."
-          leftSection={<IconSearch size={16} />}
-          value={search}
-          onChange={(e) => setSearch(e.currentTarget.value)}
-          style={{ width: "300px" }}
-        />
+        <Group gap="sm">
+          <TextInput
+            placeholder="Search invoices..."
+            leftSection={<IconSearch size={16} />}
+            value={search}
+            onChange={(e) => setSearch(e.currentTarget.value)}
+            style={{ width: "300px" }}
+          />
+
+          {/* Project filter select - options are built from invoices */}
+          <Select
+            placeholder="Filter by project"
+            value={projectFilter}
+            onChange={setProjectFilter}
+            data={selectData}
+            style={{ width: 220 }}
+            clearable
+          />
+        </Group>
+
         <Button leftSection={<IconPlus size={16} />} onClick={handleNew}>
           New Invoice
         </Button>
@@ -143,75 +179,93 @@ export default function Admin_invoice() {
       {loading ? (
         <Loader mt="lg" />
       ) : (
-        <Table striped highlightOnHover withTableBorder>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Invoice</Table.Th>
-              <Table.Th>Invoice Date</Table.Th>
-              <Table.Th>Total Amount (₹)</Table.Th>
-              <Table.Th>Amount Paid (₹)</Table.Th>
-              <Table.Th>Balance (₹)</Table.Th>
-              <Table.Th>Status</Table.Th>
-              <Table.Th>Action</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {filteredInvoices.length > 0 ? (
-              filteredInvoices.map((invoice) => (
-                <Table.Tr key={invoice.id}>
-                  <Table.Td>{invoice.invoiceNumber}</Table.Td>
-                  <Table.Td>
-                    {invoice.invoiceDate
-                      ? invoice.invoiceDate.toLocaleDateString()
-                      : "-"}
-                  </Table.Td>
-                  <Table.Td>₹{invoice.totalAmount}</Table.Td>
-                  <Table.Td>₹{invoice.amountPaidByClient}</Table.Td>
-                  <Table.Td>₹{invoice.balance}</Table.Td>
-                  <Table.Td>
-                    <Badge
-                      color={
-                        invoice.status === "Paid"
-                          ? "green"
-                          : invoice.status === "Under process"
-                          ? "yellow"
-                          : "red"
-                      }
-                    >
-                      {invoice.status}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Group gap="xs">
-                      <ActionIcon
-                        color="blue"
-                        variant="light"
-                        onClick={() => handleEdit(invoice)}
-                      >
-                        <IconEdit size={16} />
-                      </ActionIcon>
-                      <ActionIcon
-                        color="red"
-                        variant="light"
-                        onClick={() => handleDelete(invoice.id)}
-                      >
-                        <IconTrash size={16} />
-                      </ActionIcon>
-                    </Group>
-                  </Table.Td>
-                </Table.Tr>
-              ))
+       <Table striped highlightOnHover withTableBorder>
+  <Table.Thead>
+    <Table.Tr>
+      <Table.Th>Invoice</Table.Th>
+      <Table.Th>Invoice Date</Table.Th>
+      <Table.Th>Total Amount (₹)</Table.Th>
+      <Table.Th>Amount Paid (₹)</Table.Th>
+      <Table.Th>Balance (₹)</Table.Th>
+      <Table.Th>Status</Table.Th>
+      <Table.Th>Projects</Table.Th> {/* ✅ New column */}
+      <Table.Th>Action</Table.Th>
+    </Table.Tr>
+  </Table.Thead>
+  <Table.Tbody>
+    {filteredInvoices.length > 0 ? (
+      filteredInvoices.map((invoice) => (
+        <Table.Tr key={invoice.id}>
+          <Table.Td>{invoice.invoiceNumber}</Table.Td>
+          <Table.Td>
+            {invoice.invoiceDate
+              ? invoice.invoiceDate.toLocaleDateString()
+              : "-"}
+          </Table.Td>
+          <Table.Td>₹{invoice.totalAmount}</Table.Td>
+          <Table.Td>₹{invoice.amountPaidByClient}</Table.Td>
+          <Table.Td>₹{invoice.balance}</Table.Td>
+          <Table.Td>
+            <Badge
+              color={
+                invoice.status === "Paid"
+                  ? "green"
+                  : invoice.status === "Under process"
+                  ? "yellow"
+                  : "red"
+              }
+            >
+              {invoice.status}
+            </Badge>
+          </Table.Td>
+
+          {/* ✅ New Projects column */}
+          <Table.Td>
+            {Array.isArray(invoice.project) ? (
+              <Group gap="xs">
+                {invoice.project.map((proj) => (
+                  <Badge key={String(proj)} color="blue" variant="light">
+                    {proj}
+                  </Badge>
+                ))}
+              </Group>
             ) : (
-              <Table.Tr>
-                <Table.Td colSpan={7}>
-                  <Text ta="center" c="dimmed">
-                    No invoices found
-                  </Text>
-                </Table.Td>
-              </Table.Tr>
+              <Text>{invoice.project || "-"}</Text>
             )}
-          </Table.Tbody>
-        </Table>
+          </Table.Td>
+
+          <Table.Td>
+            <Group gap="xs">
+              <ActionIcon
+                color="blue"
+                variant="light"
+                onClick={() => handleEdit(invoice)}
+              >
+                <IconEdit size={16} />
+              </ActionIcon>
+              <ActionIcon
+                color="red"
+                variant="light"
+                onClick={() => handleDelete(invoice.id)}
+              >
+                <IconTrash size={16} />
+              </ActionIcon>
+            </Group>
+          </Table.Td>
+        </Table.Tr>
+      ))
+    ) : (
+      <Table.Tr>
+        <Table.Td colSpan={8}>
+          <Text ta="center" c="dimmed">
+            No invoices found
+          </Text>
+        </Table.Td>
+      </Table.Tr>
+    )}
+  </Table.Tbody>
+</Table>
+
       )}
 
       {/* Modal for new/edit invoice */}
