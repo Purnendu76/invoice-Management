@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useState } from "react";
 import {
   Table,
@@ -10,18 +11,20 @@ import {
   Text,
   Select,
   Button,
+  Modal,
 } from "@mantine/core";
-import { IconTrash, IconSearch } from "@tabler/icons-react";
+import { IconTrash, IconSearch, IconPlus } from "@tabler/icons-react";
 import axios from "axios";
 import { modals } from "@mantine/modals";
 import { notifySuccess, notifyError } from "../lib/utils/notify";
 import Cookies from "js-cookie";
+import { useForm } from "@mantine/form";
 
 type User = {
   id: string;
   user_name: string;
   email: string;
-  projectRole?: string; // camelCase for frontend
+  projectRole?: string;
 };
 
 const projectRoles = ["NFS", "GAIL", "BGCL", "STP", "BHRAT NET", "NFS AMC"];
@@ -31,10 +34,11 @@ export default function Users() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
+  const [addModalOpen, setAddModalOpen] = useState(false);
 
   const token = Cookies.get("token");
 
-  // Fetch users and map project_role -> projectRole
+  // Fetch users
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
@@ -44,7 +48,7 @@ export default function Users() {
 
       const mappedUsers = res.data.map((u: any) => ({
         ...u,
-        projectRole: u.project_role || "", // map snake_case to camelCase
+        projectRole: u.project_role || "",
       }));
 
       setUsers(mappedUsers);
@@ -56,14 +60,12 @@ export default function Users() {
     }
   }, [token]);
 
-  // Delete a user
+  // Delete user
   const handleDelete = (id: string) => {
     modals.openConfirmModal({
       title: "Delete user",
       centered: true,
-      children: (
-        <Text size="sm">Are you sure you want to delete this user?</Text>
-      ),
+      children: <Text size="sm">Are you sure you want to delete this user?</Text>,
       labels: { confirm: "Delete", cancel: "Cancel" },
       confirmProps: { color: "red" },
       onConfirm: async () => {
@@ -82,10 +84,7 @@ export default function Users() {
   };
 
   // Update project role
-  const handleProjectRoleChange = async (
-    userId: string,
-    projectRole: string
-  ) => {
+  const handleProjectRoleChange = async (userId: string, projectRole: string) => {
     try {
       if (!projectRoles.includes(projectRole)) {
         notifyError("Invalid project role");
@@ -94,11 +93,10 @@ export default function Users() {
 
       await axios.put(
         `/api/v1/auth/register/${userId}`,
-        { project_role: projectRole }, // send snake_case to backend
+        { project_role: projectRole },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Update frontend state
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, projectRole } : u))
       );
@@ -108,6 +106,34 @@ export default function Users() {
     } catch (error) {
       console.error("Update project role error:", error);
       notifyError("Failed to update project role");
+    }
+  };
+
+  // Add user form
+  const addUserForm = useForm({
+    initialValues: { name: "", email: "", password: "" },
+    validate: {
+      name: (v) => (v.trim().length < 2 ? "Name too short" : null),
+      email: (v) => (/^\S+@\S+$/.test(v) ? null : "Invalid email"),
+      password: (v) => (v.length < 6 ? "Password must be at least 6 chars" : null),
+    },
+  });
+
+  const handleAddUser = async (values: typeof addUserForm.values) => {
+    try {
+    await axios.post("/api/v1/auth/register", {
+  name: values.name,
+  email: values.email,
+  password: values.password,
+}, { headers: { Authorization: `Bearer ${token}` } });
+
+await fetchUsers(); // refresh with consistent data
+notifySuccess("User added successfully");
+addUserForm.reset();
+setAddModalOpen(false);
+    } catch (error) {
+      console.error(error);
+      notifyError("Failed to add user");
     }
   };
 
@@ -123,21 +149,38 @@ export default function Users() {
 
   return (
     <Stack>
-      <Stack gap="xs" mb="md">
-        <Title order={2}>Users</Title>
-        <Text c="dimmed" size="sm">
-          View and manage all users here.
-        </Text>
-      </Stack>
+      {/* Header */}
+      <Group justify="space-between">
+        <Stack gap="xs">
+          <Title order={2}>Users</Title>
+          <Text c="dimmed" size="sm">
+            View and manage all users here.
+          </Text>
+        </Stack>
 
-      <TextInput
+       
+      </Group>
+
+      {/* Search */}
+     <Group justify="space-between">
+
+       <TextInput
         placeholder="Search by name or email..."
         leftSection={<IconSearch size={16} />}
         value={search}
         onChange={(e) => setSearch(e.currentTarget.value)}
         style={{ width: "300px", marginBottom: 16 }}
       />
+       <Button
+          leftSection={<IconPlus size={16} />}
+          onClick={() => setAddModalOpen(true)}
+          
+        >
+          Add User
+        </Button>
+     </Group>
 
+      {/* Table */}
       {loading ? (
         <Loader mt="lg" />
       ) : (
@@ -172,9 +215,7 @@ export default function Users() {
                         size="xs"
                         variant="light"
                         onClick={() =>
-                          setDropdownOpen(
-                            dropdownOpen === user.id ? null : user.id
-                          )
+                          setDropdownOpen(dropdownOpen === user.id ? null : user.id)
                         }
                       >
                         Assign
@@ -188,9 +229,7 @@ export default function Users() {
                             label: p.replace("_", " "),
                           }))}
                           value={user.projectRole || ""}
-                          onChange={(val) =>
-                            val && handleProjectRoleChange(user.id, val)
-                          }
+                          onChange={(val) => val && handleProjectRoleChange(user.id, val)}
                           style={{ width: 150 }}
                         />
                       )}
@@ -210,6 +249,39 @@ export default function Users() {
           </Table.Tbody>
         </Table>
       )}
+
+      {/* Add User Modal */}
+      <Modal
+        opened={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        title="Add New User"
+        centered
+      >
+        <form onSubmit={addUserForm.onSubmit(handleAddUser)}>
+          <Stack>
+            <TextInput
+              label="Full Name"
+              placeholder="John Doe"
+              {...addUserForm.getInputProps("name")}
+            />
+            <TextInput
+              label="Email"
+              placeholder="hello@example.com"
+              {...addUserForm.getInputProps("email")}
+            />
+            <TextInput
+              label="Password"
+              placeholder="Enter password"
+              type="password"
+              {...addUserForm.getInputProps("password")}
+            />
+
+            <Group justify="flex-end" mt="md">
+              <Button type="submit">Save</Button>
+            </Group>
+          </Stack>
+        </form>
+      </Modal>
     </Stack>
   );
 }

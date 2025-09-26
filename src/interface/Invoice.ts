@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 export type Invoice = {
+  items: string;
   netPayable: ReactNode;
   totalDeductions: ReactNode;
   bocw: string;

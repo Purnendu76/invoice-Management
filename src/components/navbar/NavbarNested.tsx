@@ -33,10 +33,13 @@ export default function NavbarNested() {
   const userRole = user?.role || "Guest";
 
   // ✅ Logout function
-  const handleLogout = () => {
-    Cookies.remove("token", { path: "/" });
-    navigate("/", { replace: true });
-  };
+const handleLogout = () => {
+  Cookies.remove("token", { path: "/" });
+  Cookies.remove("role", { path: "/" });
+  Cookies.remove("name", { path: "/" });
+  navigate("/", { replace: true });
+  window.location.reload(); // 🔑 clears all in-memory state
+};
 
   // ✅ Filter links based on role
   const mainLinksData = [

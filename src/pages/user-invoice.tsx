@@ -19,6 +19,7 @@ import InvoiceForm from "../components/InvoiceForm";
 import type { Invoice } from "@/interface/Invoice";
 import { modals } from "@mantine/modals";
 import { notifySuccess, notifyError } from "../lib/utils/notify";
+import { Link } from "react-router-dom";
 
 export default function User_invoice() {
   const [search, setSearch] = useState("");
@@ -36,9 +37,21 @@ export default function User_invoice() {
         .split("; ")
         .find((row) => row.startsWith("token="))
         ?.split("=")[1];
-      const res = await axios.get("/api/v1/user-invoices", {
+      if (!token) {
+        notifyError("No authentication token found. Please log in again.");
+        setInvoices([]);
+        setLoading(false);
+        return;
+      }
+      const res = await axios.get("/api/v1/user-invoices/project", {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      console.log("Fetched user invoices:", res.data);
+
+      if (!Array.isArray(res.data) || res.data.length === 0) {
+        notifyError("No invoices found for your account. If you believe this is an error, please contact support.");
+      }
 
       const normalized = res.data.map((inv: Invoice) => ({
         ...inv,
@@ -102,8 +115,8 @@ export default function User_invoice() {
 
   const filteredInvoices = invoices.filter(
     (inv) =>
-      inv.invoiceNumber.toLowerCase().includes(search.toLowerCase()) ||
-      inv.status.toLowerCase().includes(search.toLowerCase())
+      (inv.invoiceNumber?.toLowerCase() || "").includes(search.toLowerCase()) ||
+      (inv.status?.toLowerCase() || "").includes(search.toLowerCase())
   );
 
   return (
@@ -129,9 +142,14 @@ export default function User_invoice() {
         </Button>
       </Group>
 
-      {/* Table */}
+      {/* Table or message below search/add group */}
       {loading ? (
         <Loader mt="lg" />
+      ) : filteredInvoices.length === 0 ? (
+        <Text ta="center" c="red" mt="lg">
+          No invoices found for your account.<br />
+          If you believe this is an error, please contact support or try refreshing the page.
+        </Text>
       ) : (
         <Table striped highlightOnHover withTableBorder>
           <Table.Thead>
@@ -146,60 +164,57 @@ export default function User_invoice() {
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {filteredInvoices.length > 0 ? (
-              filteredInvoices.map((invoice) => (
-                <Table.Tr key={invoice.id}>
-                  <Table.Td>{invoice.invoiceNumber}</Table.Td>
-                  <Table.Td>
-                    {invoice.invoiceDate
-                      ? invoice.invoiceDate.toLocaleDateString()
-                      : "-"}
-                  </Table.Td>
-                  <Table.Td>₹{invoice.totalAmount}</Table.Td>
-                  <Table.Td>₹{invoice.amountPaidByClient}</Table.Td>
-                  <Table.Td>₹{invoice.balance}</Table.Td>
-                  <Table.Td>
-                    <Badge
-                      color={
-                        invoice.status === "Paid"
-                          ? "green"
-                          : invoice.status === "Under process"
-                          ? "yellow"
-                          : "red"
-                      }
+            {filteredInvoices.map((invoice) => (
+              <Table.Tr key={invoice.id}>
+                <Table.Td>
+                  <Link
+                    to={`/user-invoice/${invoice.invoiceNumber}`}
+                    style={{ color: "#1c7ed6", textDecoration: "none", cursor: "pointer" }}
+                  >
+                    {invoice.invoiceNumber}
+                  </Link>
+                </Table.Td>
+                <Table.Td>
+                  {invoice.invoiceDate
+                    ? invoice.invoiceDate.toLocaleDateString()
+                    : "-"}
+                </Table.Td>
+                <Table.Td>₹{invoice.totalAmount}</Table.Td>
+                <Table.Td>₹{invoice.amountPaidByClient}</Table.Td>
+                <Table.Td>₹{invoice.balance}</Table.Td>
+                <Table.Td>
+                  <Badge
+                    color={
+                      invoice.status === "Paid"
+                        ? "green"
+                        : invoice.status === "Under process"
+                        ? "yellow"
+                        : "red"
+                    }
+                  >
+                    {invoice.status}
+                  </Badge>
+                </Table.Td>
+                <Table.Td>
+                  <Group gap="xs">
+                    <ActionIcon
+                      color="blue"
+                      variant="light"
+                      onClick={() => handleEdit(invoice)}
                     >
-                      {invoice.status}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Group gap="xs">
-                      <ActionIcon
-                        color="blue"
-                        variant="light"
-                        onClick={() => handleEdit(invoice)}
-                      >
-                        <IconEdit size={16} />
-                      </ActionIcon>
-                      <ActionIcon
-                        color="red"
-                        variant="light"
-                        onClick={() => handleDelete(invoice.id)}
-                      >
-                        <IconTrash size={16} />
-                      </ActionIcon>
-                    </Group>
-                  </Table.Td>
-                </Table.Tr>
-              ))
-            ) : (
-              <Table.Tr>
-                <Table.Td colSpan={7}>
-                  <Text ta="center" c="dimmed">
-                    No invoices found
-                  </Text>
+                      <IconEdit size={16} />
+                    </ActionIcon>
+                    <ActionIcon
+                      color="red"
+                      variant="light"
+                      onClick={() => handleDelete(invoice.id)}
+                    >
+                      <IconTrash size={16} />
+                    </ActionIcon>
+                  </Group>
                 </Table.Td>
               </Table.Tr>
-            )}
+            ))}
           </Table.Tbody>
         </Table>
       )}

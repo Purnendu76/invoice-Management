@@ -1,4 +1,4 @@
-import type { RouteObject } from "react-router-dom";
+import { type RouteObject } from "react-router-dom";
 import Layout from "../components/layout";
 import Dashboard from "../pages/dashboard";
 import Admin_invoice from "../pages/admin-invoice";
@@ -7,6 +7,8 @@ import Register from "../pages/regester";
 import Auth from "../pages/auth";
 import PrivateRoute from "../components/PrivateRoute";
 import Users from "../pages/users";
+import Test from "../pages/test";
+import InvoiceDetails from "../pages/InvoiceDetails";
 
 const routes: RouteObject[] = [
   { path: "/", element: <Auth /> },
@@ -32,6 +34,14 @@ const routes: RouteObject[] = [
         ),
       },
       {
+        path: "/admin-invoice/:invoiceNumber",
+        element: (
+          <PrivateRoute allowedRoles={["Admin"]}>
+            <InvoiceDetails />
+          </PrivateRoute>
+        ),
+      },
+      {
         path: "/user-invoice",
         element: (
           <PrivateRoute allowedRoles={["user", "Admin"]}>
@@ -40,13 +50,29 @@ const routes: RouteObject[] = [
         ),
       },
       {
+       path: "/user-invoice/:invoiceNumber",
+        element: (
+       
+            <InvoiceDetails />
+        
+        )
+      },
+      {
         path: "/users",
         element: (
           <PrivateRoute allowedRoles={["Admin"]}>
             <Users />
           </PrivateRoute>
         ),
-      }
+      },
+      {
+        path: "/test",
+        element: (
+          <PrivateRoute allowedRoles={["Admin", "user"]}>
+            <Test />
+          </PrivateRoute>
+        ),
+      },
     ],
   },
 ];
