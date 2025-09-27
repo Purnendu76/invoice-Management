@@ -50,7 +50,7 @@ export default function User_invoice() {
       console.log("Fetched user invoices:", res.data);
 
       if (!Array.isArray(res.data) || res.data.length === 0) {
-        notifyError("No invoices found for your account. If you believe this is an error, please contact support.");
+        // notifyError("No invoices found for your account. If you believe this is an error, please contact support.");
       }
 
       const normalized = res.data.map((inv: Invoice) => ({

@@ -120,9 +120,12 @@ useEffect(() => {
 
   // Derived calculations
   const gstAmount = basicAmount && gstPercentage ? (Number(basicAmount) * Number(gstPercentage.replace("%", ""))) / 100 : 0;
-  const totalDeduction = Number(retention||0)+Number(tds||0)+Number(gstTds||0)+Number(bocw||0)+Number(lowDepth||0)+Number(ld||0)+Number(slaPenalty||0)+Number(penalty||0)+Number(otherDeduction||0);
-  const netPayable = Number(totalAmount||0)-totalDeduction;
-  const balance = netPayable - Number(amountPaid||0);
+  const totalDeductionRaw = Number(retention||0)+Number(tds||0)+Number(gstTds||0)+Number(bocw||0)+Number(lowDepth||0)+Number(ld||0)+Number(slaPenalty||0)+Number(penalty||0)+Number(otherDeduction||0);
+  const totalDeduction = Math.max(totalDeductionRaw, 0);
+  const netPayableRaw = Number(totalAmount||0)-totalDeduction;
+  const netPayable = Math.max(netPayableRaw, 0);
+  const balanceRaw = netPayable - Number(amountPaid||0);
+  const balance = Math.max(balanceRaw, 0);
 
   useEffect(() => {
     setTotalAmount(Number(basicAmount||0)+gstAmount);
@@ -200,38 +203,38 @@ useEffect(() => {
             <Grid.Col span={{ base:12, md:6 }}>
               <Stack gap="sm">
                 <TextInput size="sm" label="Project" value={project||"Loading..."} disabled required />
-                <Select size="sm" label="Mode of Project" data={modes} value={mode} onChange={setMode} required/>
-                <Select size="sm" label="State" data={states} value={state} onChange={setState} required/>
-                <Select size="sm" label="Bill Category" data={billCategories} value={billCategory} onChange={setBillCategory} required/>
-                <Select size="sm" label="Milestone" data={milestones} value={milestone} onChange={setMilestone}/>
+                <Select size="sm" label="Mode of Project" data={modes} value={mode} onChange={setMode} required maxDropdownHeight={200}/>
+                <Select size="sm" label="State" data={states} value={state} onChange={setState} required maxDropdownHeight={200}/>
+                <Select size="sm" label="Bill Category" data={billCategories} value={billCategory} onChange={setBillCategory} required maxDropdownHeight={200}/>
+                <Select size="sm" label="Milestone" data={milestones} value={milestone} onChange={setMilestone} maxDropdownHeight={200}/>
                 <TextInput size="sm" label="Invoice Number" value={invoiceNumber} onChange={(e)=>setInvoiceNumber(e.currentTarget.value)} required/>
                 <DatePickerInput size="sm" label="Invoice Date" value={invoiceDate} onChange={(v)=>setInvoiceDate(v?new Date(v):null)} required/>
                 <DatePickerInput size="sm" label="Submission Date" value={submissionDate} onChange={(v)=>setSubmissionDate(v?new Date(v):null)} minDate={invoiceDate||undefined} required/>
-                <NumberInput size="sm" label="Invoice Basic Amount" value={basicAmount} onChange={(val)=>setBasicAmount(typeof val==="number"?val:"")} required/>
-                <Select size="sm" label="GST Percentage Applicable" data={gstOptions} value={gstPercentage} onChange={setGstPercentage} required/>
+                <NumberInput size="sm" label="Invoice Basic Amount" value={basicAmount} onChange={(val)=>setBasicAmount(typeof val==="number"?val:"")} required min={0}/>
+                <Select size="sm" label="GST Percentage Applicable" data={gstOptions} value={gstPercentage} onChange={setGstPercentage} required maxDropdownHeight={200}/>
                 <NumberInput size="sm" label="Invoice GST Amount" value={gstAmount} disabled/>
                 <NumberInput size="sm" label="Total Amount" value={totalAmount} disabled/>
-                <NumberInput size="sm" label="Passed Amount by Client" value={passedAmount} onChange={(val)=>setPassedAmount(typeof val==="number"?val:"")}/>
+                <NumberInput size="sm" label="Passed Amount by Client" value={passedAmount} onChange={(val)=>setPassedAmount(typeof val==="number"?val:"")} min={0}/>
               </Stack>
             </Grid.Col>
 
             {/* Column 2 */}
             <Grid.Col span={{ base:12, md:6 }}>
               <Stack gap="sm">
-                <NumberInput size="sm" label="Retention" value={retention} onChange={(val)=>setRetention(typeof val==="number"?val:"")}/>
-                <NumberInput size="sm" label="GST Withheld" value={gstWithheld} onChange={(val)=>setGstWithheld(typeof val==="number"?val:"")}/>
-                <NumberInput size="sm" label="TDS" value={tds} onChange={(val)=>setTds(typeof val==="number"?val:"")}/>
-                <NumberInput size="sm" label="GST TDS" value={gstTds} onChange={(val)=>setGstTds(typeof val==="number"?val:"")}/>
-                <NumberInput size="sm" label="BOCW" value={bocw} onChange={(val)=>setBocw(typeof val==="number"?val:"")}/>
-                <NumberInput size="sm" label="Low Depth Deduction" value={lowDepth} onChange={(val)=>setLowDepth(typeof val==="number"?val:"")}/>
-                <NumberInput size="sm" label="LD" value={ld} onChange={(val)=>setLd(typeof val==="number"?val:"")}/>
-                <NumberInput size="sm" label="SLA Penalty" value={slaPenalty} onChange={(val)=>setSlaPenalty(typeof val==="number"?val:"")}/>
-                <NumberInput size="sm" label="Penalty" value={penalty} onChange={(val)=>setPenalty(typeof val==="number"?val:"")}/>
-                <NumberInput size="sm" label="Other Deduction" value={otherDeduction} onChange={(val)=>setOtherDeduction(typeof val==="number"?val:"")}/>
+                <NumberInput size="sm" label="Retention" value={retention} onChange={(val)=>setRetention(typeof val==="number"?val:"")} min={0}/>
+                <NumberInput size="sm" label="GST Withheld" value={gstWithheld} onChange={(val)=>setGstWithheld(typeof val==="number"?val:"")} min={0}/>
+                <NumberInput size="sm" label="TDS" value={tds} onChange={(val)=>setTds(typeof val==="number"?val:"")} min={0}/>
+                <NumberInput size="sm" label="GST TDS" value={gstTds} onChange={(val)=>setGstTds(typeof val==="number"?val:"")} min={0}/>
+                <NumberInput size="sm" label="BOCW" value={bocw} onChange={(val)=>setBocw(typeof val==="number"?val:"")} min={0}/>
+                <NumberInput size="sm" label="Low Depth Deduction" value={lowDepth} onChange={(val)=>setLowDepth(typeof val==="number"?val:"")} min={0}/>
+                <NumberInput size="sm" label="LD" value={ld} onChange={(val)=>setLd(typeof val==="number"?val:"")} min={0}/>
+                <NumberInput size="sm" label="SLA Penalty" value={slaPenalty} onChange={(val)=>setSlaPenalty(typeof val==="number"?val:"")} min={0}/>
+                <NumberInput size="sm" label="Penalty" value={penalty} onChange={(val)=>setPenalty(typeof val==="number"?val:"")} min={0}/>
+                <NumberInput size="sm" label="Other Deduction" value={otherDeduction} onChange={(val)=>setOtherDeduction(typeof val==="number"?val:"")} min={0}/>
                 <NumberInput size="sm" label="Total Deduction" value={totalDeduction} disabled/>
                 <NumberInput size="sm" label="Net Payable" value={netPayable} disabled/>
-                <Select size="sm" label="Status" data={statuses} value={status} onChange={setStatus} required/>
-                <NumberInput size="sm" label="Amount Paid By Client" value={amountPaid} onChange={(val)=>setAmountPaid(typeof val==="number"?val:"")}/>
+                <Select size="sm" label="Status" data={statuses} value={status} onChange={setStatus} required maxDropdownHeight={200}/>
+                <NumberInput size="sm" label="Amount Paid By Client" value={amountPaid} onChange={(val)=>setAmountPaid(typeof val==="number"?val:"")} min={0}/>
                 <DatePickerInput size="sm" label="Payment Date" value={paymentDate} onChange={(v)=>setPaymentDate(v?new Date(v):null)} disabled={status!=="Paid"} minDate={submissionDate||undefined} required/>
                 <NumberInput size="sm" label="Balance" value={balance} disabled/>
                 <TextInput size="sm" label="Remarks" value={remarks} onChange={(e)=>setRemarks(e.currentTarget.value)}/>
